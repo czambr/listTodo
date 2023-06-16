@@ -1,3 +1,5 @@
+import { DragDropContext } from "@hello-pangea/dnd";
+
 import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import TodoComputed from "./components/TodoComputed";
@@ -5,15 +7,14 @@ import TodoCreate from "./components/TodoCreate";
 import TodoFilter from "./components/TodoFilter";
 import TodoList from "./components/TodoList";
 
-// const initialStateTodos = [
-//     { id: 1, title: "Go to the Gym", completed: true },
-//     { id: 2, title: "Learn JS", completed: false },
-//     { id: 3, title: "Learn Cobol", completed: true },
-//     { id: 4, title: "Learn Python", completed: false },
-//     { id: 5, title: "Complete todo app on Fronteend Mentor", completed: false },
-// ];
-
 const initialStateTodos = JSON.parse(localStorage.getItem("todos")) || [];
+const reorder = (list, startIndex, endIndex) => {
+    const result = [...list];
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+
+    return result;
+};
 
 const App = () => {
     const [todos, setTodos] = useState(initialStateTodos);
@@ -59,17 +60,34 @@ const App = () => {
         }
     };
 
+    const handelDragEnd = result => {
+        const { destination, source } = result;
+        if (!destination) return;
+        if (
+            source.index === destination.index &&
+            source.droppableId == destination.ddroppableId
+        )
+            return;
+        setTodos(prevTask =>
+            reorder(prevTask, source.index, destination.index)
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-200 bg-[url('./assets/images/bg-mobile-light.jpg')] bg-contain bg-no-repeat transition-all duration-1000 dark:bg-gray-900 dark:bg-[url('./assets/images/bg-mobile-dark.jpg')] md:bg-[url('./assets/images/bg-desktop-light.jpg')] md:dark:md:bg-[url('./assets/images/bg-desktop-dark.jpg')]">
             <Header />
 
             <main className="container mx-auto mt-8 px-4 md:max-w-xl">
                 <TodoCreate createTodo={createTodo} />
-                <TodoList
-                    todos={filteredTodos()}
-                    removeTodo={removeTodo}
-                    updateTodo={updateTodo}
-                />
+
+                <DragDropContext onDragEnd={handelDragEnd}>
+                    <TodoList
+                        todos={filteredTodos()}
+                        removeTodo={removeTodo}
+                        updateTodo={updateTodo}
+                    />
+                </DragDropContext>
+
                 <TodoComputed
                     computedItemsLeft={computedItemsLeft}
                     clearComplete={clearComplete}
@@ -78,7 +96,7 @@ const App = () => {
             </main>
 
             <footer className="mt-4 text-center transition-all duration-1000 dark:text-gray-400">
-                Drag and drop
+                Todo list By TaskManager
             </footer>
         </div>
     );
